@@ -1,0 +1,27 @@
+{
+  "name": "youtube-downloader",
+  "version": "1.0.0",
+  "description": "A Node.js application to download YouTube videos, playlists, audio, and captions",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "download": "node src/index.js"
+  },
+  "dependencies": {
+    "@distube/ytdl-core": "^4.13.4",
+    "chalk": "^4.1.2",
+    "cli-progress": "^3.12.0",
+    "ffmpeg-static": "^5.2.0",
+    "fs-extra": "^11.2.0",
+    "inquirer": "^8.2.6",
+    "youtube-transcript": "^1.0.6",
+    "ytpl": "^2.3.0"
+  },
+  "keywords": [
+    "youtube",
+    "downloader",
+    "node"
+  ],
+  "author": "",
+  "license": "MIT"
+}
