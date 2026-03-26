@@ -54,7 +54,8 @@ class YouTubeDownloader {
         limit: Infinity,
         requestOptions: {
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+            'Accept-Language': 'en-US,en;q=0.9'
           }
         }
       });
@@ -78,8 +79,8 @@ class YouTubeDownloader {
 
       return {
         title: playlist.title,
-        author: playlist.author.name,
-        items: playlist.items.map(item => ({
+        author: playlist.author ? playlist.author.name : 'Unknown',
+        items: (playlist.items || []).map(item => ({
           title: item.title,
           url: item.url,
           id: item.id
@@ -99,11 +100,18 @@ class YouTubeDownloader {
 
     const outputPath = path.join(outputDir, this.sanitizeFilename(`${info.title}.mp4`));
 
+    const ytdlOptions = { highWaterMark: 1 << 25 };
+    if (format) {
+      ytdlOptions.format = format;
+    } else {
+      ytdlOptions.quality = 'highest';
+    }
+
     return new Promise((resolve, reject) => {
-      const videoStream = ytdl(url, { format, highWaterMark: 1 << 25 }); // 32MB buffer
+      const videoStream = ytdl(url, ytdlOptions); // 32MB buffer
       const writeStream = fs.createWriteStream(outputPath);
 
-      this.progressBar.start(format.contentLength || 0, 0);
+      this.progressBar.start(format ? (format.contentLength || 0) : 0, 0);
 
       videoStream.on('progress', (chunkLength, downloaded, total) => {
         this.progressBar.update(downloaded);
@@ -137,11 +145,18 @@ class YouTubeDownloader {
     const tempVideoPath = path.join(outputDir, this.sanitizeFilename(`${info.title}_temp.mp4`));
     const outputPath = path.join(outputDir, this.sanitizeFilename(`${info.title}.${format}`));
 
+    const ytdlOptions = { highWaterMark: 1 << 25 };
+    if (videoFormat) {
+      ytdlOptions.format = videoFormat;
+    } else {
+      ytdlOptions.quality = 'highestaudio';
+    }
+
     return new Promise((resolve, reject) => {
-      const videoStream = ytdl(url, { format: videoFormat, highWaterMark: 1 << 25 });
+      const videoStream = ytdl(url, ytdlOptions);
       const writeStream = fs.createWriteStream(tempVideoPath);
 
-      this.progressBar.start(videoFormat.contentLength || 0, 0);
+      this.progressBar.start(videoFormat ? (videoFormat.contentLength || 0) : 0, 0);
 
       videoStream.on('progress', (chunkLength, downloaded, total) => {
         this.progressBar.update(downloaded);

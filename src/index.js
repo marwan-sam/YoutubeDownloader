@@ -55,12 +55,25 @@ async function parseAndRunCommand(command, args) {
 
   for (let i = 1; i < args.length; i++) {
     const arg = args[i];
-    if (arg === '--audio') options.audio = true;
-    else if (arg === '--subtitles') options.subtitles = args[++i] || true;
-    else if (arg === '--quality') options.quality = args[++i];
-    else if (arg === '--output') options.outputDir = args[++i];
-    else if (arg === '--start') options.start = parseInt(args[++i]);
-    else if (arg === '--end') options.end = parseInt(args[++i]);
+    if (arg === '--audio') {
+      options.audio = true;
+    } else if (arg === '--subtitles') {
+      const nextArg = args[i + 1];
+      if (nextArg && !nextArg.startsWith('--')) {
+        options.subtitles = nextArg;
+        i++;
+      } else {
+        options.subtitles = true;
+      }
+    } else if (arg === '--quality') {
+      options.quality = args[++i];
+    } else if (arg === '--output') {
+      options.outputDir = args[++i];
+    } else if (arg === '--start') {
+      options.start = parseInt(args[++i]);
+    } else if (arg === '--end') {
+      options.end = parseInt(args[++i]);
+    }
   }
 
   try {
@@ -124,6 +137,10 @@ async function interactiveMode() {
   if (initialAnswers.type === 'playlist') {
     try {
       const playlistInfo = await downloader.getPlaylistInfo(initialAnswers.url);
+      if (!playlistInfo.items || playlistInfo.items.length === 0) {
+        console.error(chalk.red('The playlist is empty or could not be loaded.'));
+        process.exit(1);
+      }
       console.log(chalk.blue(`Playlist found: ${playlistInfo.title} (${playlistInfo.items.length} videos)`));
       playlistRange = await inquirer.prompt([
         {
