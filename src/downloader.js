@@ -6,7 +6,6 @@ const ffmpeg = require('ffmpeg-static');
 const { spawn } = require('child_process');
 const cliProgress = require('cli-progress');
 const { YoutubeTranscript } = require('youtube-transcript');
-const readline = require('readline');
 
 class YouTubeDownloader {
   constructor() {
@@ -196,7 +195,7 @@ class YouTubeDownloader {
   }
 
   async downloadPlaylist(url, options) {
-    const { type, quality, format, outputDir, subtitles } = options;
+    const { type, quality, format, outputDir, subtitles, start: startOpt, end: endOpt } = options;
     const playlistInfo = await this.getPlaylistInfo(url);
     const playlistDir = path.join(outputDir, this.sanitizeFilename(playlistInfo.title));
     await fs.ensureDir(playlistDir);
@@ -204,16 +203,8 @@ class YouTubeDownloader {
     console.log(`Downloading playlist: ${playlistInfo.title}`);
     console.log(`Total videos: ${playlistInfo.items.length}`);
 
-    // Prompt user for start and end indices
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout
-    });
-
-    const start = await this.promptUser(rl, `Enter start video number (1-${playlistInfo.items.length}, default 1): `, 1, playlistInfo.items.length);
-    const end = await this.promptUser(rl, `Enter end video number (${start}-${playlistInfo.items.length}, default ${playlistInfo.items.length}): `, start, playlistInfo.items.length);
-
-    rl.close();
+    const start = Math.max(1, parseInt(startOpt) || 1);
+    const end = Math.min(playlistInfo.items.length, parseInt(endOpt) || playlistInfo.items.length);
 
     console.log(`Downloading videos from ${start} to ${end}`);
 
@@ -222,10 +213,9 @@ class YouTubeDownloader {
       const item = playlistInfo.items[i];
       console.log(`\nProcessing ${i + 1}/${playlistInfo.items.length}: ${item.title}`);
 
-      // Check if file already exists
-      const info = await this.getVideoInfo(item.url);
-      const extension = type === 'video' ? 'mp4' : format;
-      const outputPath = path.join(playlistDir, this.sanitizeFilename(`${info.title}.${extension}`));
+      // Check if file already exists using item.title from playlist info first to avoid extra network call
+      const extension = type === 'video' ? 'mp4' : (format || 'mp3');
+      const outputPath = path.join(playlistDir, this.sanitizeFilename(`${item.title}.${extension}`));
 
       if (await fs.pathExists(outputPath)) {
         console.log(`Skipping ${item.title}: File already exists`);
@@ -237,7 +227,7 @@ class YouTubeDownloader {
         if (type === 'video') {
           result = await this.downloadVideo(item.url, { quality, outputDir: playlistDir, subtitles });
         } else {
-          result = await this.downloadAudio(item.url, { quality, format, outputDir: playlistDir, subtitles });
+          result = await this.downloadAudio(item.url, { quality, format: format || 'mp3', outputDir: playlistDir, subtitles });
         }
         results.push(result);
       } catch (error) {
@@ -299,18 +289,6 @@ class YouTubeDownloader {
     return filename.replace(/[<>:"/\\|?*]/g, '_');
   }
 
-  promptUser(rl, question, min, max) {
-    return new Promise((resolve) => {
-      rl.question(question, (answer) => {
-        const num = parseInt(answer.trim(), 10);
-        if (isNaN(num) || num < min || num > max) {
-          resolve(max); // default to max if invalid
-        } else {
-          resolve(num);
-        }
-      });
-    });
-  }
 }
 
 module.exports = YouTubeDownloader;

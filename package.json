@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "A Node.js application to download YouTube videos, playlists, audio, and captions",
   "main": "src/index.js",
+  "bin": {
+    "app": "src/index.js"
+  },
   "scripts": {
     "start": "node src/index.js",
     "download": "node src/index.js"
